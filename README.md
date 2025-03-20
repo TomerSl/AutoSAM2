@@ -50,7 +50,7 @@ Ensure that the configuration file (e.g., `sam2.1_hiera_l.yaml`) is available in
 ## Downloading and Organizing the PolypGen Dataset
 
 ### Download the Data:
-Download the PolypGen dataset from its official source. (Include a link if available.)
+Download the PolypGen dataset from its official source. 
 
 ### Directory Structure:
 Organize the data as follows:
@@ -127,16 +127,6 @@ During inference, 10 example evaluation images are generated. For each example, 
 - The predicted segmentation mask.
 
 These images are saved in `output/visualizations/` (or a similar directory) to help you quickly assess model performance.
-
-## Project Structure
-
-- `datasets/` - Dataset handling code
-  - `polyp_gen.py` - Implementation for the polyp_gen video dataset
-  - `__init__.py` - Dataset factory
-
-- `train.py` - Training script for video segmentation
-- `inference.py` - Evaluation and inference script
-
 
 
 ## Acknowledgements
