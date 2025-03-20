@@ -1,6 +1,135 @@
-# AutoSAM2 for Medical Video Segmentation
+# AutoSAM2: Adapting SAM2 to Medical Videos
 
-This project adapts the Segment Anything Model 2 (SAM2) for medical video segmentation of polyp sequences, by using the AutoSAM approach. It replaces the prompt encoder in SAM2 with the custom prompt encoder from AutoSAM that's better suited for medical image segmentation tasks.
+AutoSAM2 is a framework that adapts Meta's Segment Anything Model v2 (SAM2) for fully automated segmentation in medical videos—specifically, for polyp segmentation in colonoscopy data. By replacing SAM2's interactive prompt encoder with a learnable, automatic prompt encoder, AutoSAM2 generates segmentation prompts directly from the image. This approach leverages SAM2's powerful image encoder, memory mechanisms, and mask decoder while fine-tuning a new module tailored to the polyp segmentation task.
+
+**Note:** In our evaluation, we perform segmentation in image prediction mode rather than video mode. Additionally, we provide 10 example evaluation images to quickly assess the model's performance.
+
+## Table of Contents
+- [Installation and Environment Setup](#installation-and-environment-setup)
+- [Downloading SAM2 Weights](#downloading-sam2-weights)
+- [Downloading and Organizing the PolypGen Dataset](#downloading-and-organizing-the-polypgen-dataset)
+- [Training the Model](#training-the-model)
+- [Evaluation and Inference](#evaluation-and-inference)
+- [Example Evaluation Images](#example-evaluation-images)
+
+
+## Installation and Environment Setup
+
+### Clone the Repository:
+```bash
+git clone https://github.com/TomerSl/AutoSAM2.git
+cd AutoSAM2
+```
+
+### Activate the Virtual Environment:
+Create a virtual environment using Python's built-in venv (or your favorite tool) and activate it:
+```bash
+python3 -m venv sam2_env
+source sam2_env/bin/activate
+```
+
+### Install Dependencies:
+Install the required packages:
+```bash
+pip install -r requirements.txt
+```
+
+**Tip:** If you need to generate a dependency list, run:
+```bash
+pip freeze > requirements.txt
+```
+
+## Downloading SAM2 Weights
+
+### Download the Weights:
+Download the SAM2 checkpoint (e.g., `sam2.1_hiera_large.pt`) from Meta's official repository or the provided link.
+
+### Place the Checkpoint:
+Place the downloaded checkpoint in the `sam2-main/checkpoints/` directory.
+
+### Configuration Files:
+Ensure that the configuration file (e.g., `sam2.1_hiera_l.yaml`) is available in the `sam2-main/configs/` directory.
+
+## Downloading and Organizing the PolypGen Dataset
+
+### Download the Data:
+Download the PolypGen dataset from its official source. (Include a link if available.)
+
+### Directory Structure:
+Organize the data as follows:
+```
+polyp_gen/
+  ├── train/
+  │     ├── images/
+  │     │     ├── <sequence_id>/
+  │     │     │     ├── 0001.jpg
+  │     │     │     ├── 0002.jpg
+  │     │     │     └── ...
+  │     ├── masks/
+  │     │     ├── <sequence_id>/
+  │     │     │     ├── 0001.jpg
+  │     │     │     ├── 0002.jpg
+  │     │     │     └── ...
+  │     └── train_list.txt
+  └── valid/
+        ├── images/
+        │     ├── <sequence_id>/
+        │     │     ├── 0001.jpg
+        │     │     ├── 0002.jpg
+        │     │     └── ...
+        ├── masks/
+        │     ├── <sequence_id>/
+        │     │     ├── 0001.jpg
+        │     │     ├── 0002.jpg
+        │     │     └── ...
+        └── val_list.txt
+```
+
+### File Lists:
+Ensure that `train_list.txt` and `val_list.txt` list the sequence IDs (one per line) corresponding to the subdirectories in the images and masks folders.
+
+## Training the Model
+
+### (Optional) Configure Data Augmentations:
+You can edit the `get_transforms` function in `dataset/polyp_gen.py` to enable augmentations (such as color jitter, rotation, and horizontal flip). For debugging, you can disable them by returning `None`.
+
+### Run Training:
+```bash
+python train.py --data_dir /home/fodl/tomerslor/AutoSAM2/polyp_gen --output_dir output --batch_size 12 --epochs 200 --lr 5e-5
+```
+
+This script will:
+- Load and preprocess the training and validation data.
+- Load the SAM2 models from the `sam2-main` directory.
+- Train the ModelEmb module using a combined Dice and BCE loss.
+- Save checkpoints and training visualizations to the output directory.
+
+## Evaluation and Inference
+
+After training, evaluate your model and run inference using `inference.py` (which reuses the evaluation logic from training). This script operates in image prediction mode.
+
+### Run Inference:
+```bash
+python inference.py  --pretrained /home/fodl/tomerslor/AutoSAM2/output/checkpoints/model_epoch_82.pth
+```
+
+The script will:
+- Load the validation dataset.
+- Load the trained ModelEmb along with its pretrained weights.
+- Load the SAM2 image model.
+- Evaluate the model on the validation set (using the same evaluation logic as in training).
+- Generate and save segmentation visualizations for all frames in the specified video (10 example images are produced for evaluation).
+
+**Note:** The `--pretrained` argument accepts either a full path or a relative path (e.g., `output/checkpoints/model_epoch_82.pth`), as long as the file is accessible from your working directory.
+
+## Example Evaluation Images
+
+During inference, 10 example evaluation images are generated. For each example, the following are saved:
+- The original input image.
+- The ground truth segmentation mask.
+- The predicted segmentation mask.
+
+These images are saved in `output/visualizations/` (or a similar directory) to help you quickly assess model performance.
 
 ## Project Structure
 
@@ -11,121 +140,13 @@ This project adapts the Segment Anything Model 2 (SAM2) for medical video segmen
 - `train.py` - Training script for video segmentation
 - `inference.py` - Evaluation and inference script
 
-## Dataset
 
-The `polyp_gen` dataset is structured as a video dataset with sequential frames. The structure is:
-
-```
-polyp_gen/
-├── train/
-│   ├── images/
-│   │   ├── sequence1/
-│   │   │   ├── frame1.jpg
-│   │   │   ├── frame2.jpg
-│   │   │   └── ...
-│   │   ├── sequence2/
-│   │   └── ...
-│   ├── masks/
-│   │   ├── sequence1/
-│   │   │   ├── frame1.jpg
-│   │   │   ├── frame2.jpg
-│   │   │   └── ...
-│   │   ├── sequence2/
-│   │   └── ...
-│   └── train_list.txt (contains sequence names)
-└── valid/
-    ├── images/
-    │   └── ...
-    ├── masks/
-    │   └── ...
-    └── val_list.txt (contains sequence names)
-```
-
-## Key Features
-
-1. **Custom Prompt Encoder**: Replaces SAM2's default prompt encoder with the one from AutoSAM, optimized for medical image segmentation.
-2. **Video Segmentation**: Leverages SAM2's ability to handle video sequences, maintaining temporal consistency in polyp segmentation through proper handling of video frames.
-3. **VideoDatapoint Structure**: Uses a structured video data representation with frames and objects to efficiently process and track polyps across frames.
-4. **Focal Loss**: Uses focal loss for better handling of class imbalance in medical segmentation tasks.
-
-## Video Processing Capabilities
-
-The implementation uses VideoDatapoint, Frame, and Object classes to represent video data:
-
-- **VideoDatapoint**: Contains a sequence of frames from a video and metadata
-- **Frame**: Represents a single frame with multiple potential objects
-- **Object**: Represents a segmented object (polyp) within a frame
-
-This structure allows for:
-- Efficient tracking of objects across frames
-- Temporal consistency in segmentation
-- Future extension to multi-object tracking
-
-## Usage
-
-### Setup
-
-Make sure you have a compatible version of PyTorch installed. This implementation requires:
-- Python 3.8+
-- PyTorch 1.13+
-- CUDA 11.6+ (for GPU acceleration)
-
-### Training
-
-To train the model on video data:
-
-```bash
-python train.py --checkpoint path/to/sam2_checkpoint.pth --batch-size 8 --epochs 50 --lr 1e-4
-```
-
-Additional options:
-- `--dataset`: Dataset name (default: 'polyp_gen')
-- `--gpu`: GPU ID to use (default: 0)
-- `--cpu`: Use CPU instead of GPU
-- `--output-dir`: Directory to save results (default: 'output')
-
-### Evaluation
-
-To evaluate a trained model on video sequences:
-
-```bash
-python inference.py --checkpoint path/to/sam2_checkpoint.pth --weights path/to/trained_weights.pth
-```
-
-Additional options:
-- `--dataset`: Dataset name (default: 'polyp_gen')
-- `--batch-size`: Batch size for evaluation (default: 8)
-- `--output-dir`: Directory to save results (default: 'results')
-
-## Implementation Details
-
-### SAM2 Modification
-
-The original SAM2 model has been modified by replacing the prompt encoder with AutoSAM's version. This implementation is specifically designed to work with video sequences of medical polyp data.
-
-Key changes:
-1. The prompt encoder from AutoSAM has been adapted to work with SAM2's architecture for video processing.
-2. The data loading pipeline supports sequential frames from video sequences.
-3. Batches are prepared to maintain temporal information between frames.
-
-### Loss Functions
-
-The implementation uses a combination of:
-- Focal Loss: For better handling of class imbalance
-- Dice Loss: As a region-based loss for segmentation quality
-
-### Performance Considerations
-
-For optimal performance with video data:
-- Use a GPU with at least 8GB VRAM
-- Increase batch size for smoother convergence when resources allow
-- When processing long sequences, consider sampling to avoid memory issues
 
 ## Acknowledgements
 
 This project is built upon:
 - [SAM2](https://github.com/facebookresearch/sam2) by Meta AI Research
-- [AutoSAM](https://github.com/imed-lab) for medical segmentation approach
+- [AutoSAM](https://github.com/talshaharabany/AutoSAM) for medical segmentation approach
 
 ## License
 
