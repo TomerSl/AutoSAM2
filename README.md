@@ -38,7 +38,8 @@ pip install -r requirements.txt
 ## Downloading SAM2 Weights
 
 ### Download the Weights:
-Download the SAM2 checkpoint (e.g., `sam2.1_hiera_large.pt`) from Meta's official repository or the provided link.
+Download the SAM2 checkpoint (e.g., `sam2.1_hiera_large.pt`) from Meta's official repository or the provided link or run the bash command in sam2-main/checkpoints/.
+
 
 ### Place the Checkpoint:
 Place the downloaded checkpoint in the `sam2-main/checkpoints/` directory.
