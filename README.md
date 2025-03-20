@@ -34,10 +34,6 @@ Install the required packages:
 pip install -r requirements.txt
 ```
 
-**Tip:** If you need to generate a dependency list, run:
-```bash
-pip freeze > requirements.txt
-```
 
 ## Downloading SAM2 Weights
 
